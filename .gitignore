@@ -25,6 +25,7 @@ coverage.html
 Thumbs.db
 
 # Project-specific
-testdata/
 ROADMAP.md
 spec.md
+CHANGELOG.md
+CONTRIBUTING.md

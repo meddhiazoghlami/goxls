@@ -39,7 +39,71 @@ go get github.com/meddhiazoghlami/goxcel
 
 ## Quick Start
 
-### Basic Usage
+### Basic Usage (Simplified API)
+
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+
+    "github.com/meddhiazoghlami/goxcel"
+)
+
+func main() {
+    // Read an Excel file with one import
+    workbook, err := goxcel.ReadFile("data.xlsx")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Iterate through sheets and tables
+    for _, sheet := range workbook.Sheets {
+        fmt.Printf("Sheet: %s\n", sheet.Name)
+
+        for _, table := range sheet.Tables {
+            fmt.Printf("  Table: %s (%d rows)\n", table.Name, table.RowCount())
+            fmt.Printf("  Headers: %v\n", table.Headers)
+        }
+    }
+}
+```
+
+### With Options
+
+```go
+// Configure detection parameters
+workbook, err := goxcel.ReadFile("data.xlsx",
+    goxcel.WithMinColumns(3),
+    goxcel.WithMinRows(5),
+    goxcel.WithParallel(true),
+    goxcel.WithExpandMergedCells(true),
+)
+```
+
+### With Context (for cancellation/timeout)
+
+```go
+ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+defer cancel()
+
+workbook, err := goxcel.ReadFileWithContext(ctx, "large.xlsx")
+```
+
+### Error Handling
+
+```go
+workbook, err := goxcel.ReadFile("data.xlsx")
+if errors.Is(err, goxcel.ErrFileNotFound) {
+    log.Fatal("File does not exist")
+}
+if errors.Is(err, goxcel.ErrNoTablesFound) {
+    log.Fatal("No tables detected in file")
+}
+```
+
+### Advanced Usage (Package-Level Access)
 
 ```go
 package main
@@ -50,27 +114,18 @@ import (
 )
 
 func main() {
-    // Create a workbook reader
+    // Full control with the reader package
     wr := reader.NewWorkbookReader()
-
-    // Read an Excel file
     workbook, err := wr.ReadFile("data.xlsx")
     if err != nil {
         panic(err)
     }
 
-    // Iterate through sheets and tables
     for _, sheet := range workbook.Sheets {
-        fmt.Printf("Sheet: %s\n", sheet.Name)
-
         for _, table := range sheet.Tables {
-            fmt.Printf("  Table: %s (%d rows)\n", table.Name, table.RowCount())
-            fmt.Printf("  Headers: %v\n", table.Headers)
-
-            // Access row data
             for _, row := range table.Rows {
                 if cell, ok := row.Get("Name"); ok {
-                    fmt.Printf("    Name: %s\n", cell.AsString())
+                    fmt.Printf("Name: %s\n", cell.AsString())
                 }
             }
         }
@@ -81,12 +136,13 @@ func main() {
 ### Export to JSON
 
 ```go
+// Simple export (using root package)
+jsonStr, err := goxcel.ToJSON(table)
+jsonPretty, err := goxcel.ToJSONPretty(table)
+
+// With advanced options (using export package)
 import "github.com/meddhiazoghlami/goxcel/pkg/export"
 
-// Simple export
-jsonStr, err := export.ToJSON(table)
-
-// With options
 opts := export.DefaultJSONOptions()
 opts.Pretty = true
 opts.SelectedColumns = []string{"Name", "Email", "Age"}
@@ -98,12 +154,14 @@ result, err := exporter.ExportString(table)
 ### Export to CSV
 
 ```go
+// Simple export (using root package)
+csvStr, err := goxcel.ToCSV(table)
+tsvStr, err := goxcel.ToTSV(table)
+csvSemi, err := goxcel.ToCSVWithDelimiter(table, ';')
+
+// With advanced options (using export package)
 import "github.com/meddhiazoghlami/goxcel/pkg/export"
 
-// Simple export
-csvStr, err := export.ToCSV(table)
-
-// With options
 opts := export.DefaultCSVOptions()
 opts.Delimiter = ';'
 opts.QuoteAll = true
@@ -115,12 +173,13 @@ result, err := exporter.ExportString(table)
 ### Export to SQL
 
 ```go
+// Simple export (using root package)
+sqlStr, err := goxcel.ToSQL(table, "users")
+sqlCreate, err := goxcel.ToSQLWithCreate(table, "users")
+
+// With advanced options (using export package)
 import "github.com/meddhiazoghlami/goxcel/pkg/export"
 
-// Simple export
-sqlStr, err := export.ToSQL(table, "users")
-
-// With options (PostgreSQL with CREATE TABLE)
 opts := export.DefaultSQLOptions()
 opts.TableName = "employees"
 opts.Dialect = export.DialectPostgreSQL
