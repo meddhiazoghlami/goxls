@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/meddhiazoghlami/goxcel/pkg/models"
+	"github.com/meddhiazoghlami/goxls/pkg/models"
 )
 
 func createTestTable() *models.Table {

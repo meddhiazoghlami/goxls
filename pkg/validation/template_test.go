@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/meddhiazoghlami/goxcel/pkg/models"
+	"github.com/meddhiazoghlami/goxls/pkg/models"
 )
 
 // Helper to create a test workbook

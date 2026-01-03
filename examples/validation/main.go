@@ -10,13 +10,13 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/meddhiazoghlami/goxcel"
-	"github.com/meddhiazoghlami/goxcel/pkg/validation"
+	"github.com/meddhiazoghlami/goxls"
+	"github.com/meddhiazoghlami/goxls/pkg/validation"
 )
 
 func main() {
 	// Read Excel file
-	workbook, err := goxcel.ReadFile("../../testdata/sample.xlsx")
+	workbook, err := goxls.ReadFile("../../testdata/sample.xlsx")
 	if err != nil {
 		log.Fatalf("Failed to read file: %v", err)
 	}

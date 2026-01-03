@@ -1,7 +1,7 @@
 .PHONY: all build test clean install lint fmt vet cover help examples
 
 # Binary name
-BINARY=goxcel
+BINARY=goxls
 
 # Build directory
 BUILD_DIR=bin
@@ -121,7 +121,7 @@ check: fmt vet test
 
 ## help: Show this help message
 help:
-	@echo "Goxcel - Excel file reader library"
+	@echo "Goxls - Excel file reader library"
 	@echo ""
 	@echo "Usage: make [target]"
 	@echo ""

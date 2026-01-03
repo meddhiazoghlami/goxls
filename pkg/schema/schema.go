@@ -8,7 +8,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/meddhiazoghlami/goxcel/pkg/models"
+	"github.com/meddhiazoghlami/goxls/pkg/models"
 )
 
 var (

@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/meddhiazoghlami/goxcel/pkg/export"
-	"github.com/meddhiazoghlami/goxcel/pkg/models"
-	"github.com/meddhiazoghlami/goxcel/pkg/reader"
+	"github.com/meddhiazoghlami/goxls/pkg/export"
+	"github.com/meddhiazoghlami/goxls/pkg/models"
+	"github.com/meddhiazoghlami/goxls/pkg/reader"
 )
 
 // CLI options
@@ -125,9 +125,9 @@ func parseFlags() options {
 }
 
 func printUsage() {
-	fmt.Println("goxcel - Dynamic Excel Table Reader")
+	fmt.Println("goxls - Dynamic Excel Table Reader")
 	fmt.Println()
-	fmt.Println("Usage: goxcel [options] <file.xlsx>")
+	fmt.Println("Usage: goxls [options] <file.xlsx>")
 	fmt.Println()
 	fmt.Println("Options:")
 	fmt.Println("  -f, --format <format>    Output format: json, csv, sql, text (default: text)")
@@ -141,12 +141,12 @@ func printUsage() {
 	fmt.Println("      --no-headers         Exclude headers from CSV output")
 	fmt.Println()
 	fmt.Println("Examples:")
-	fmt.Println("  goxcel data.xlsx")
-	fmt.Println("  goxcel data.xlsx --format=json --pretty")
-	fmt.Println("  goxcel data.xlsx -f csv -o output.csv")
-	fmt.Println("  goxcel data.xlsx --sheet=Sales --columns=Name,Amount")
-	fmt.Println("  goxcel data.xlsx -f sql --sql-table=users")
-	fmt.Println("  goxcel data.xlsx --summary")
+	fmt.Println("  goxls data.xlsx")
+	fmt.Println("  goxls data.xlsx --format=json --pretty")
+	fmt.Println("  goxls data.xlsx -f csv -o output.csv")
+	fmt.Println("  goxls data.xlsx --sheet=Sales --columns=Name,Amount")
+	fmt.Println("  goxls data.xlsx -f sql --sql-table=users")
+	fmt.Println("  goxls data.xlsx --summary")
 }
 
 func filterTables(wb *models.Workbook, opts options) []*models.Table {

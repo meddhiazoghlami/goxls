@@ -13,7 +13,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/meddhiazoghlami/goxcel"
+	"github.com/meddhiazoghlami/goxls"
 )
 
 func main() {
@@ -24,9 +24,9 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	workbook, err := goxcel.ReadFileWithContext(ctx, filePath)
+	workbook, err := goxls.ReadFileWithContext(ctx, filePath)
 	if err != nil {
-		if errors.Is(err, goxcel.ErrContextCanceled) {
+		if errors.Is(err, goxls.ErrContextCanceled) {
 			fmt.Println("Operation timed out or was canceled")
 		} else {
 			log.Fatalf("Read failed: %v", err)
@@ -43,9 +43,9 @@ func main() {
 	// Start reading in a goroutine
 	done := make(chan struct{})
 	go func() {
-		wb, err := goxcel.ReadFileWithContext(ctx2, filePath)
+		wb, err := goxls.ReadFileWithContext(ctx2, filePath)
 		if err != nil {
-			if errors.Is(err, goxcel.ErrContextCanceled) {
+			if errors.Is(err, goxls.ErrContextCanceled) {
 				fmt.Println("  Read was canceled")
 			} else {
 				fmt.Printf("  Read error: %v\n", err)
@@ -69,9 +69,9 @@ func main() {
 	ctx3, cancel3 := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel3()
 
-	workbook3, err := goxcel.ReadFileWithContext(ctx3, filePath,
-		goxcel.WithParallel(true),
-		goxcel.WithMinColumns(2),
+	workbook3, err := goxls.ReadFileWithContext(ctx3, filePath,
+		goxls.WithParallel(true),
+		goxls.WithMinColumns(2),
 	)
 	if err != nil {
 		log.Fatalf("Read with options failed: %v", err)
@@ -81,14 +81,14 @@ func main() {
 
 	// Example 4: Error handling with sentinel errors
 	fmt.Println("=== Error Handling ===")
-	_, err = goxcel.ReadFile("nonexistent.xlsx")
+	_, err = goxls.ReadFile("nonexistent.xlsx")
 	if err != nil {
 		switch {
-		case errors.Is(err, goxcel.ErrFileNotFound):
+		case errors.Is(err, goxls.ErrFileNotFound):
 			fmt.Println("File not found (expected)")
-		case errors.Is(err, goxcel.ErrInvalidFormat):
+		case errors.Is(err, goxls.ErrInvalidFormat):
 			fmt.Println("Invalid file format")
-		case errors.Is(err, goxcel.ErrContextCanceled):
+		case errors.Is(err, goxls.ErrContextCanceled):
 			fmt.Println("Operation was canceled")
 		default:
 			fmt.Printf("Other error: %v\n", err)

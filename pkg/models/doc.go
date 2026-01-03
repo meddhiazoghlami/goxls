@@ -1,6 +1,6 @@
 // Package models defines the core data structures for representing Excel data.
 //
-// This package contains all the types used throughout goxcel for representing
+// This package contains all the types used throughout goxls for representing
 // workbooks, sheets, tables, rows, and cells, as well as configuration and
 // analysis structures.
 //

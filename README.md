@@ -1,16 +1,16 @@
-# Goxcel
+# Goxls
 
 A lightweight, high-performance Go library for reading Excel files (.xlsx) with automatic table detection and intelligent data extraction.
 
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://go.dev/)
-[![CI](https://github.com/meddhiazoghlami/goxcel/actions/workflows/ci.yml/badge.svg)](https://github.com/meddhiazoghlami/goxcel/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](https://github.com/meddhiazoghlami/goxcel)
-[![Go Reference](https://pkg.go.dev/badge/github.com/meddhiazoghlami/goxcel.svg)](https://pkg.go.dev/github.com/meddhiazoghlami/goxcel)
+[![CI](https://github.com/meddhiazoghlami/goxls/actions/workflows/ci.yml/badge.svg)](https://github.com/meddhiazoghlami/goxls/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](https://github.com/meddhiazoghlami/goxls)
+[![Go Reference](https://pkg.go.dev/badge/github.com/meddhiazoghlami/goxls.svg)](https://pkg.go.dev/github.com/meddhiazoghlami/goxls)
 
 
 ## Overview
 
-Goxcel automatically detects and extracts tabular data from Excel spreadsheets without requiring predefined schemas or manual range specifications. It intelligently identifies table boundaries, headers, and data types, making it ideal for processing Excel files with unknown or dynamic structures.
+Goxls automatically detects and extracts tabular data from Excel spreadsheets without requiring predefined schemas or manual range specifications. It intelligently identifies table boundaries, headers, and data types, making it ideal for processing Excel files with unknown or dynamic structures.
 
 ## Features
 
@@ -34,7 +34,7 @@ Goxcel automatically detects and extracts tabular data from Excel spreadsheets w
 ## Installation
 
 ```bash
-go get github.com/meddhiazoghlami/goxcel
+go get github.com/meddhiazoghlami/goxls
 ```
 
 ## Quick Start
@@ -48,12 +48,12 @@ import (
     "fmt"
     "log"
 
-    "github.com/meddhiazoghlami/goxcel"
+    "github.com/meddhiazoghlami/goxls"
 )
 
 func main() {
     // Read an Excel file with one import
-    workbook, err := goxcel.ReadFile("data.xlsx")
+    workbook, err := goxls.ReadFile("data.xlsx")
     if err != nil {
         log.Fatal(err)
     }
@@ -74,11 +74,11 @@ func main() {
 
 ```go
 // Configure detection parameters
-workbook, err := goxcel.ReadFile("data.xlsx",
-    goxcel.WithMinColumns(3),
-    goxcel.WithMinRows(5),
-    goxcel.WithParallel(true),
-    goxcel.WithExpandMergedCells(true),
+workbook, err := goxls.ReadFile("data.xlsx",
+    goxls.WithMinColumns(3),
+    goxls.WithMinRows(5),
+    goxls.WithParallel(true),
+    goxls.WithExpandMergedCells(true),
 )
 ```
 
@@ -88,17 +88,17 @@ workbook, err := goxcel.ReadFile("data.xlsx",
 ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 defer cancel()
 
-workbook, err := goxcel.ReadFileWithContext(ctx, "large.xlsx")
+workbook, err := goxls.ReadFileWithContext(ctx, "large.xlsx")
 ```
 
 ### Error Handling
 
 ```go
-workbook, err := goxcel.ReadFile("data.xlsx")
-if errors.Is(err, goxcel.ErrFileNotFound) {
+workbook, err := goxls.ReadFile("data.xlsx")
+if errors.Is(err, goxls.ErrFileNotFound) {
     log.Fatal("File does not exist")
 }
-if errors.Is(err, goxcel.ErrNoTablesFound) {
+if errors.Is(err, goxls.ErrNoTablesFound) {
     log.Fatal("No tables detected in file")
 }
 ```
@@ -110,7 +110,7 @@ package main
 
 import (
     "fmt"
-    "github.com/meddhiazoghlami/goxcel/pkg/reader"
+    "github.com/meddhiazoghlami/goxls/pkg/reader"
 )
 
 func main() {
@@ -137,11 +137,11 @@ func main() {
 
 ```go
 // Simple export (using root package)
-jsonStr, err := goxcel.ToJSON(table)
-jsonPretty, err := goxcel.ToJSONPretty(table)
+jsonStr, err := goxls.ToJSON(table)
+jsonPretty, err := goxls.ToJSONPretty(table)
 
 // With advanced options (using export package)
-import "github.com/meddhiazoghlami/goxcel/pkg/export"
+import "github.com/meddhiazoghlami/goxls/pkg/export"
 
 opts := export.DefaultJSONOptions()
 opts.Pretty = true
@@ -155,12 +155,12 @@ result, err := exporter.ExportString(table)
 
 ```go
 // Simple export (using root package)
-csvStr, err := goxcel.ToCSV(table)
-tsvStr, err := goxcel.ToTSV(table)
-csvSemi, err := goxcel.ToCSVWithDelimiter(table, ';')
+csvStr, err := goxls.ToCSV(table)
+tsvStr, err := goxls.ToTSV(table)
+csvSemi, err := goxls.ToCSVWithDelimiter(table, ';')
 
 // With advanced options (using export package)
-import "github.com/meddhiazoghlami/goxcel/pkg/export"
+import "github.com/meddhiazoghlami/goxls/pkg/export"
 
 opts := export.DefaultCSVOptions()
 opts.Delimiter = ';'
@@ -174,11 +174,11 @@ result, err := exporter.ExportString(table)
 
 ```go
 // Simple export (using root package)
-sqlStr, err := goxcel.ToSQL(table, "users")
-sqlCreate, err := goxcel.ToSQLWithCreate(table, "users")
+sqlStr, err := goxls.ToSQL(table, "users")
+sqlCreate, err := goxls.ToSQLWithCreate(table, "users")
 
 // With advanced options (using export package)
-import "github.com/meddhiazoghlami/goxcel/pkg/export"
+import "github.com/meddhiazoghlami/goxls/pkg/export"
 
 opts := export.DefaultSQLOptions()
 opts.TableName = "employees"
@@ -193,7 +193,7 @@ result, err := exporter.ExportString(table)
 ### Excel Date Conversion
 
 ```go
-import "github.com/meddhiazoghlami/goxcel/pkg/dateutil"
+import "github.com/meddhiazoghlami/goxls/pkg/dateutil"
 
 // Convert Excel serial date to Go time.Time
 // Serial 45658 = January 1, 2025
@@ -420,7 +420,7 @@ Excel date conversion utilities.
 Validate table data against defined rules.
 
 ```go
-import "github.com/meddhiazoghlami/goxcel/pkg/validation"
+import "github.com/meddhiazoghlami/goxls/pkg/validation"
 
 // Using the fluent RuleBuilder API
 rules := []validation.ValidationRule{
@@ -460,7 +460,7 @@ byRow := result.ErrorsByRow()
 Read Excel named ranges directly as tables.
 
 ```go
-import "github.com/meddhiazoghlami/goxcel/pkg/reader"
+import "github.com/meddhiazoghlami/goxls/pkg/reader"
 
 // Create a named range reader
 nr := reader.NewNamedRangeReader()
@@ -489,31 +489,31 @@ fmt.Printf("Sheet: %s, Start: %s, End: %s\n", info.SheetName, info.StartCell, in
 
 ```bash
 # Build the CLI
-go build -o goxcel ./cmd/main.go
+go build -o goxls ./cmd/main.go
 
 # Read and analyze an Excel file
-./goxcel data.xlsx
+./goxls data.xlsx
 
 # Export to JSON (pretty printed)
-./goxcel -f json --pretty data.xlsx
+./goxls -f json --pretty data.xlsx
 
 # Export to CSV
-./goxcel -f csv -o output.csv data.xlsx
+./goxls -f csv -o output.csv data.xlsx
 
 # Export to SQL
-./goxcel -f sql --sql-table=users data.xlsx
+./goxls -f sql --sql-table=users data.xlsx
 
 # Filter by sheet name
-./goxcel -s Sales data.xlsx
+./goxls -s Sales data.xlsx
 
 # Filter by table name
-./goxcel -t Sales_Table1 data.xlsx
+./goxls -t Sales_Table1 data.xlsx
 
 # Select specific columns
-./goxcel -f csv -c "Name,Email,Age" data.xlsx
+./goxls -f csv -c "Name,Email,Age" data.xlsx
 
 # Quick summary with column type analysis
-./goxcel --summary data.xlsx
+./goxls --summary data.xlsx
 ```
 
 ### CLI Options

@@ -10,13 +10,13 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/meddhiazoghlami/goxcel"
-	"github.com/meddhiazoghlami/goxcel/pkg/export"
+	"github.com/meddhiazoghlami/goxls"
+	"github.com/meddhiazoghlami/goxls/pkg/export"
 )
 
 func main() {
 	// Read Excel file
-	workbook, err := goxcel.ReadFile("../../testdata/sample.xlsx")
+	workbook, err := goxls.ReadFile("../../testdata/sample.xlsx")
 	if err != nil {
 		log.Fatalf("Failed to read file: %v", err)
 	}
@@ -29,7 +29,7 @@ func main() {
 
 	// Method 1: Simple JSON export (compact)
 	fmt.Println("=== Compact JSON ===")
-	json, err := goxcel.ToJSON(table)
+	json, err := goxls.ToJSON(table)
 	if err != nil {
 		log.Fatalf("ToJSON failed: %v", err)
 	}
@@ -38,7 +38,7 @@ func main() {
 
 	// Method 2: Pretty-printed JSON
 	fmt.Println("=== Pretty JSON ===")
-	jsonPretty, err := goxcel.ToJSONPretty(table)
+	jsonPretty, err := goxls.ToJSONPretty(table)
 	if err != nil {
 		log.Fatalf("ToJSONPretty failed: %v", err)
 	}

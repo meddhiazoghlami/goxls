@@ -10,13 +10,13 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/meddhiazoghlami/goxcel"
-	"github.com/meddhiazoghlami/goxcel/pkg/export"
+	"github.com/meddhiazoghlami/goxls"
+	"github.com/meddhiazoghlami/goxls/pkg/export"
 )
 
 func main() {
 	// Read Excel file
-	workbook, err := goxcel.ReadFile("../../testdata/sample.xlsx")
+	workbook, err := goxls.ReadFile("../../testdata/sample.xlsx")
 	if err != nil {
 		log.Fatalf("Failed to read file: %v", err)
 	}
@@ -29,7 +29,7 @@ func main() {
 
 	// Method 1: Standard CSV (comma-separated)
 	fmt.Println("=== Standard CSV ===")
-	csv, err := goxcel.ToCSV(table)
+	csv, err := goxls.ToCSV(table)
 	if err != nil {
 		log.Fatalf("ToCSV failed: %v", err)
 	}
@@ -37,7 +37,7 @@ func main() {
 
 	// Method 2: TSV (tab-separated)
 	fmt.Println("=== TSV (Tab-Separated) ===")
-	tsv, err := goxcel.ToTSV(table)
+	tsv, err := goxls.ToTSV(table)
 	if err != nil {
 		log.Fatalf("ToTSV failed: %v", err)
 	}
@@ -45,7 +45,7 @@ func main() {
 
 	// Method 3: Custom delimiter (semicolon)
 	fmt.Println("=== Semicolon-Separated ===")
-	semiCSV, err := goxcel.ToCSVWithDelimiter(table, ';')
+	semiCSV, err := goxls.ToCSVWithDelimiter(table, ';')
 	if err != nil {
 		log.Fatalf("ToCSVWithDelimiter failed: %v", err)
 	}

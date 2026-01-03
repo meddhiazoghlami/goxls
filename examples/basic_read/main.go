@@ -1,7 +1,7 @@
 // Example: Basic Excel file reading
 //
 // This example demonstrates the simplest way to read an Excel file
-// using the goxcel library.
+// using the goxls library.
 //
 // Run: go run main.go
 package main
@@ -10,12 +10,12 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/meddhiazoghlami/goxcel"
+	"github.com/meddhiazoghlami/goxls"
 )
 
 func main() {
 	// Read an Excel file with default settings
-	workbook, err := goxcel.ReadFile("../../testdata/sample.xlsx")
+	workbook, err := goxls.ReadFile("../../testdata/sample.xlsx")
 	if err != nil {
 		log.Fatalf("Failed to read file: %v", err)
 	}

@@ -10,12 +10,12 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/meddhiazoghlami/goxcel"
+	"github.com/meddhiazoghlami/goxls"
 )
 
 func main() {
 	// Read Excel file
-	workbook, err := goxcel.ReadFile("../../testdata/sample.xlsx")
+	workbook, err := goxls.ReadFile("../../testdata/sample.xlsx")
 	if err != nil {
 		log.Fatalf("Failed to read file: %v", err)
 	}
@@ -34,7 +34,7 @@ func main() {
 	fmt.Println("=== Filtering: Non-empty first column ===")
 	if len(table.Headers) > 0 {
 		firstCol := table.Headers[0]
-		filtered := table.Filter(func(row goxcel.Row) bool {
+		filtered := table.Filter(func(row goxls.Row) bool {
 			if cell, ok := row.Get(firstCol); ok {
 				return !cell.IsEmpty()
 			}
@@ -101,7 +101,7 @@ func main() {
 	fmt.Println("\n=== Chained Operations ===")
 	if len(table.Headers) >= 2 {
 		result := table.
-			Filter(func(row goxcel.Row) bool {
+			Filter(func(row goxls.Row) bool {
 				// Keep all rows for this demo
 				return true
 			}).

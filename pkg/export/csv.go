@@ -7,7 +7,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/meddhiazoghlami/goxcel/pkg/models"
+	"github.com/meddhiazoghlami/goxls/pkg/models"
 )
 
 // CSVOptions holds CSV-specific export options

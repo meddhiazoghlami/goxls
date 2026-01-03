@@ -1,7 +1,7 @@
 package reader
 
 import (
-	"github.com/meddhiazoghlami/goxcel/pkg/models"
+	"github.com/meddhiazoghlami/goxls/pkg/models"
 )
 
 // RowParser extracts structured row data from a table

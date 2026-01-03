@@ -1,4 +1,4 @@
-module github.com/meddhiazoghlami/goxcel
+module github.com/meddhiazoghlami/goxls
 
 go 1.25.5
 

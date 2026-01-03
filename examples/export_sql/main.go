@@ -10,13 +10,13 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/meddhiazoghlami/goxcel"
-	"github.com/meddhiazoghlami/goxcel/pkg/export"
+	"github.com/meddhiazoghlami/goxls"
+	"github.com/meddhiazoghlami/goxls/pkg/export"
 )
 
 func main() {
 	// Read Excel file
-	workbook, err := goxcel.ReadFile("../../testdata/sample.xlsx")
+	workbook, err := goxls.ReadFile("../../testdata/sample.xlsx")
 	if err != nil {
 		log.Fatalf("Failed to read file: %v", err)
 	}
@@ -29,7 +29,7 @@ func main() {
 
 	// Method 1: Simple SQL INSERT statements
 	fmt.Println("=== Basic SQL INSERT ===")
-	sql, err := goxcel.ToSQL(table, "my_table")
+	sql, err := goxls.ToSQL(table, "my_table")
 	if err != nil {
 		log.Fatalf("ToSQL failed: %v", err)
 	}
@@ -37,7 +37,7 @@ func main() {
 
 	// Method 2: SQL with CREATE TABLE statement
 	fmt.Println("=== SQL with CREATE TABLE ===")
-	sqlCreate, err := goxcel.ToSQLWithCreate(table, "my_table")
+	sqlCreate, err := goxls.ToSQLWithCreate(table, "my_table")
 	if err != nil {
 		log.Fatalf("ToSQLWithCreate failed: %v", err)
 	}

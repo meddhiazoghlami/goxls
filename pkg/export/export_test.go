@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/meddhiazoghlami/goxcel/pkg/models"
+	"github.com/meddhiazoghlami/goxls/pkg/models"
 )
 
 // Helper function to create a test table

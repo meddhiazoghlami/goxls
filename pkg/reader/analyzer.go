@@ -1,7 +1,7 @@
 package reader
 
 import (
-	"github.com/meddhiazoghlami/goxcel/pkg/models"
+	"github.com/meddhiazoghlami/goxls/pkg/models"
 )
 
 // TableAnalyzer detects table boundaries within a sheet

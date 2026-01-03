@@ -40,7 +40,7 @@ jobs:
           go-version: 'stable'
 
       - name: Build CLI
-        run: go build -o goxcel ./cmd
+        run: go build -o goxls ./cmd
 
       - name: Verify binary
-        run: ./goxcel --help || true
+        run: ./goxls --help || true

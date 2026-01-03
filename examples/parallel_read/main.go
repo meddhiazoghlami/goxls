@@ -11,7 +11,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/meddhiazoghlami/goxcel"
+	"github.com/meddhiazoghlami/goxls"
 )
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 	// Method 1: Sequential reading (default)
 	fmt.Println("=== Sequential Reading ===")
 	start := time.Now()
-	workbook1, err := goxcel.ReadFile(filePath)
+	workbook1, err := goxls.ReadFile(filePath)
 	if err != nil {
 		log.Fatalf("Sequential read failed: %v", err)
 	}
@@ -35,7 +35,7 @@ func main() {
 	// Method 2: Parallel reading
 	fmt.Println("=== Parallel Reading ===")
 	start = time.Now()
-	workbook2, err := goxcel.ReadFile(filePath, goxcel.WithParallel(true))
+	workbook2, err := goxls.ReadFile(filePath, goxls.WithParallel(true))
 	if err != nil {
 		log.Fatalf("Parallel read failed: %v", err)
 	}

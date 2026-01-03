@@ -10,14 +10,14 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/meddhiazoghlami/goxcel"
+	"github.com/meddhiazoghlami/goxls"
 )
 
 func main() {
 	// For this example, we'll create two versions of the same table
 	// by reading the file and modifying the data
 
-	workbook, err := goxcel.ReadFile("../../testdata/sample.xlsx")
+	workbook, err := goxls.ReadFile("../../testdata/sample.xlsx")
 	if err != nil {
 		log.Fatalf("Failed to read file: %v", err)
 	}
@@ -31,7 +31,7 @@ func main() {
 
 	// Create a "new" version by filtering some rows
 	// This simulates changes to the data
-	newTable := oldTable.Filter(func(row goxcel.Row) bool {
+	newTable := oldTable.Filter(func(row goxls.Row) bool {
 		// Keep only first half of rows (simulating removed rows)
 		return row.Index < len(oldTable.Rows)/2+1
 	})
@@ -47,7 +47,7 @@ func main() {
 	fmt.Printf("New table: %d rows\n\n", newTable.RowCount())
 
 	// Compare the tables
-	diff := goxcel.DiffTables(oldTable, newTable, keyColumn)
+	diff := goxls.DiffTables(oldTable, newTable, keyColumn)
 
 	// Report results
 	fmt.Println("=== Diff Results ===")
