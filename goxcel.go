@@ -34,6 +34,7 @@ import (
 	"github.com/meddhiazoghlami/goxcel/pkg/export"
 	"github.com/meddhiazoghlami/goxcel/pkg/models"
 	"github.com/meddhiazoghlami/goxcel/pkg/reader"
+	"github.com/meddhiazoghlami/goxcel/pkg/schema"
 	"github.com/meddhiazoghlami/goxcel/pkg/validation"
 )
 
@@ -98,6 +99,9 @@ type (
 
 	// SchemaBuilder provides a fluent API for building sheet schemas
 	SchemaBuilder = validation.SchemaBuilder
+
+	// SchemaOptions configures Go struct generation from tables
+	SchemaOptions = schema.SchemaOptions
 )
 
 // Re-export CellType constants
@@ -573,4 +577,52 @@ func QuickValidate(workbook *Workbook, requiredColumns ...string) *TemplateResul
 //	}
 func ValidateColumns(table *Table, requiredColumns ...string) []string {
 	return validation.ValidateColumns(table, requiredColumns...)
+}
+
+// --- Schema Generation Functions ---
+
+// GenerateStruct creates a Go struct definition from a table's headers and inferred types.
+// The generated struct includes excel tags for mapping columns back to struct fields.
+//
+// Example:
+//
+//	// Input table with headers: Name, Age, Email, Active
+//	code, err := goxcel.GenerateStruct(table, "Person")
+//	// Output:
+//	// type Person struct {
+//	//     Name   string  `excel:"Name"`
+//	//     Age    float64 `excel:"Age"`
+//	//     Email  string  `excel:"Email"`
+//	//     Active bool    `excel:"Active"`
+//	// }
+func GenerateStruct(table *Table, structName string) (string, error) {
+	return schema.Generate(table, schema.DefaultOptions(structName))
+}
+
+// GenerateStructWithOptions creates a Go struct definition with custom options.
+// Use SchemaOptions to configure package name, struct tags, and more.
+//
+// Example:
+//
+//	opts := &goxcel.SchemaOptions{
+//	    StructName:  "Employee",
+//	    PackageName: "models",
+//	    ExcelTags:   true,
+//	    JSONTags:    true,
+//	    OmitEmpty:   true,
+//	}
+//	code, err := goxcel.GenerateStructWithOptions(table, opts)
+func GenerateStructWithOptions(table *Table, opts *SchemaOptions) (string, error) {
+	return schema.Generate(table, opts)
+}
+
+// DefaultSchemaOptions returns the default schema options for struct generation.
+//
+// Example:
+//
+//	opts := goxcel.DefaultSchemaOptions("Person")
+//	opts.JSONTags = true
+//	code, err := goxcel.GenerateStructWithOptions(table, opts)
+func DefaultSchemaOptions(structName string) *SchemaOptions {
+	return schema.DefaultOptions(structName)
 }
