@@ -563,3 +563,73 @@ func TestValidator_Validate_AllValidData(t *testing.T) {
 		t.Errorf("Expected 0 errors, got %d", len(result.Errors))
 	}
 }
+
+func TestValidator_Validate_MissingCellInRow(t *testing.T) {
+	// Create a table where a row is missing a cell for a required column
+	table := &models.Table{
+		Name:    "TestTable",
+		Headers: []string{"Name", "Email"},
+		Rows: []models.Row{
+			{
+				Index: 0,
+				Values: map[string]models.Cell{
+					"Name":  {Value: "Alice", RawValue: "Alice", Type: models.CellTypeString},
+					"Email": {Value: "alice@example.com", RawValue: "alice@example.com", Type: models.CellTypeString},
+				},
+			},
+			{
+				Index: 1,
+				Values: map[string]models.Cell{
+					"Name": {Value: "Bob", RawValue: "Bob", Type: models.CellTypeString},
+					// "Email" is missing from this row's Values map
+				},
+			},
+		},
+	}
+
+	rules := []ValidationRule{
+		{Column: "Email", Required: true},
+	}
+
+	result := NewValidator(rules).Validate(table)
+
+	if result.Valid {
+		t.Error("Expected validation to fail for missing required cell")
+	}
+
+	if len(result.Errors) != 1 {
+		t.Errorf("Expected 1 error, got %d", len(result.Errors))
+	}
+
+	if result.Errors[0].Row != 1 {
+		t.Errorf("Expected error on row 1, got row %d", result.Errors[0].Row)
+	}
+}
+
+func TestValidator_Validate_MissingCellNonRequired(t *testing.T) {
+	// Create a table where a row is missing a cell for a non-required column
+	table := &models.Table{
+		Name:    "TestTable",
+		Headers: []string{"Name", "Nickname"},
+		Rows: []models.Row{
+			{
+				Index: 0,
+				Values: map[string]models.Cell{
+					"Name": {Value: "Alice", RawValue: "Alice", Type: models.CellTypeString},
+					// "Nickname" is missing but not required
+				},
+			},
+		},
+	}
+
+	rules := []ValidationRule{
+		{Column: "Nickname", Required: false, AllowedValues: []string{"Al", "Bob"}},
+	}
+
+	result := NewValidator(rules).Validate(table)
+
+	// Should pass since Nickname is not required
+	if !result.Valid {
+		t.Errorf("Expected validation to pass for missing non-required cell, got errors: %v", result.Errors)
+	}
+}

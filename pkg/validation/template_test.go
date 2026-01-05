@@ -2,6 +2,7 @@ package validation
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/meddhiazoghlami/goxls/pkg/models"
@@ -612,5 +613,426 @@ func TestTemplateErrorType_String(t *testing.T) {
 		if str == "" || str == "Unknown" {
 			t.Errorf("Expected valid string for type %d, got '%s'", typ, str)
 		}
+	}
+
+	// Test unknown type
+	unknownType := TemplateErrorType(999)
+	if unknownType.String() != "Unknown" {
+		t.Errorf("Expected 'Unknown' for invalid type, got '%s'", unknownType.String())
+	}
+}
+
+func TestTemplateError_Error(t *testing.T) {
+	err := TemplateError{
+		Type:    ErrorMissingColumn,
+		Sheet:   "Sheet1",
+		Column:  "Name",
+		Message: "column not found",
+	}
+
+	errStr := err.Error()
+	if errStr != "column not found" {
+		t.Errorf("Expected 'column not found', got '%s'", errStr)
+	}
+}
+
+func TestTemplateResult_Summary_Valid(t *testing.T) {
+	result := &TemplateResult{
+		Valid:           true,
+		Errors:          []TemplateError{},
+		Warnings:        []TemplateError{},
+		SheetsValidated: []string{"Sheet1", "Sheet2"},
+		TablesValidated: []string{"Sheet1.Table1", "Sheet2.Table1"},
+	}
+
+	summary := result.Summary()
+	if summary == "" {
+		t.Error("Expected non-empty summary")
+	}
+	if !strings.Contains(summary, "passed") {
+		t.Error("Expected summary to contain 'passed' for valid result")
+	}
+	if !strings.Contains(summary, "2 sheets") {
+		t.Errorf("Expected summary to mention 2 sheets, got: %s", summary)
+	}
+}
+
+func TestTemplateResult_ErrorsBySheet_WorkbookLevel(t *testing.T) {
+	result := &TemplateResult{
+		Valid: false,
+		Errors: []TemplateError{
+			{Type: ErrorSheetCount, Sheet: "", Message: "Too few sheets"}, // Workbook-level error
+			{Type: ErrorMissingColumn, Sheet: "Sheet1", Message: "Missing col"},
+		},
+	}
+
+	bySheet := result.ErrorsBySheet()
+
+	// Check workbook-level errors are grouped under "(workbook)"
+	if len(bySheet["(workbook)"]) != 1 {
+		t.Errorf("Expected 1 workbook-level error, got %d", len(bySheet["(workbook)"]))
+	}
+	if len(bySheet["Sheet1"]) != 1 {
+		t.Errorf("Expected 1 Sheet1 error, got %d", len(bySheet["Sheet1"]))
+	}
+}
+
+func TestValidateTemplate_AllTables(t *testing.T) {
+	// Create workbook with multiple tables in one sheet
+	workbook := &models.Workbook{
+		Sheets: []models.Sheet{
+			{
+				Name: "Data",
+				Tables: []models.Table{
+					{
+						Name:    "Table1",
+						Headers: []string{"ID", "Name"},
+						Rows: []models.Row{
+							{Index: 0, Values: map[string]models.Cell{
+								"ID":   {RawValue: "1", Type: models.CellTypeNumber, Value: 1.0},
+								"Name": {RawValue: "Alice", Type: models.CellTypeString},
+							}},
+						},
+					},
+					{
+						Name:    "Table2",
+						Headers: []string{"ID", "Name"},
+						Rows: []models.Row{
+							{Index: 0, Values: map[string]models.Cell{
+								"ID":   {RawValue: "2", Type: models.CellTypeNumber, Value: 2.0},
+								"Name": {RawValue: "Bob", Type: models.CellTypeString},
+							}},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Test: Validate all tables with "*"
+	template := Template{
+		RequiredSheets: []string{"Data"},
+		SheetSchemas: map[string]SheetSchema{
+			"Data": {
+				TableName:       "*", // Validate all tables
+				RequiredColumns: []string{"ID", "Name"},
+			},
+		},
+	}
+
+	result := ValidateTemplate(workbook, template)
+	if !result.Valid {
+		t.Errorf("Expected valid, got errors: %v", result.Errors)
+	}
+	if len(result.TablesValidated) != 2 {
+		t.Errorf("Expected 2 tables validated, got %d", len(result.TablesValidated))
+	}
+}
+
+func TestValidateTemplate_SheetWithNoTables(t *testing.T) {
+	workbook := &models.Workbook{
+		Sheets: []models.Sheet{
+			{
+				Name:   "EmptySheet",
+				Tables: []models.Table{}, // No tables
+			},
+		},
+	}
+
+	// Test: Required sheet with schema but no tables
+	template := Template{
+		RequiredSheets: []string{"EmptySheet"},
+		SheetSchemas: map[string]SheetSchema{
+			"EmptySheet": {
+				RequiredColumns: []string{"ID"},
+			},
+		},
+	}
+
+	result := ValidateTemplate(workbook, template)
+	if result.Valid {
+		t.Error("Expected invalid for sheet with no tables")
+	}
+}
+
+func TestValidateTemplate_EmptyTableAllowed(t *testing.T) {
+	workbook := &models.Workbook{
+		Sheets: []models.Sheet{
+			{
+				Name: "Sheet1",
+				Tables: []models.Table{
+					{
+						Name:    "EmptyTable",
+						Headers: []string{"ID", "Name"},
+						Rows:    []models.Row{}, // Empty table
+					},
+				},
+			},
+		},
+	}
+
+	// Test: Empty table with AllowEmpty = true
+	template := Template{
+		SheetSchemas: map[string]SheetSchema{
+			"Sheet1": {
+				AllowEmpty: true,
+			},
+		},
+	}
+
+	result := ValidateTemplate(workbook, template)
+	if !result.Valid {
+		t.Errorf("Expected valid with AllowEmpty, got errors: %v", result.Errors)
+	}
+}
+
+func TestValidateTemplate_EmptyTableNotAllowed(t *testing.T) {
+	workbook := &models.Workbook{
+		Sheets: []models.Sheet{
+			{
+				Name: "Sheet1",
+				Tables: []models.Table{
+					{
+						Name:    "EmptyTable",
+						Headers: []string{"ID", "Name"},
+						Rows:    []models.Row{}, // Empty table
+					},
+				},
+			},
+		},
+	}
+
+	// Test: Empty table with AllowEmpty = false (default)
+	template := Template{
+		SheetSchemas: map[string]SheetSchema{
+			"Sheet1": {
+				AllowEmpty: false,
+			},
+		},
+	}
+
+	result := ValidateTemplate(workbook, template)
+	if result.Valid {
+		t.Error("Expected invalid for empty table without AllowEmpty")
+	}
+}
+
+func TestValidateTemplate_TypeStrictnessDefault(t *testing.T) {
+	workbook := &models.Workbook{
+		Sheets: []models.Sheet{
+			{
+				Name: "Sheet1",
+				Tables: []models.Table{
+					{
+						Name:    "Table1",
+						Headers: []string{"Value"},
+						Rows: []models.Row{
+							{Index: 0, Values: map[string]models.Cell{
+								"Value": {RawValue: "100", Type: models.CellTypeNumber, Value: 100.0},
+							}},
+							{Index: 1, Values: map[string]models.Cell{
+								"Value": {RawValue: "text", Type: models.CellTypeString, Value: "text"},
+							}},
+							{Index: 2, Values: map[string]models.Cell{
+								"Value": {RawValue: "200", Type: models.CellTypeNumber, Value: 200.0},
+							}},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Test: TypeStrictness with invalid value (uses default)
+	template := Template{
+		SheetSchemas: map[string]SheetSchema{
+			"Sheet1": {
+				ColumnTypes: map[string]models.CellType{
+					"Value": models.CellTypeNumber,
+				},
+				TypeStrictness: 99, // Invalid value, should use default (0.5 threshold)
+			},
+		},
+	}
+
+	result := ValidateTemplate(workbook, template)
+	// 2/3 = 66.7% match, default threshold is 50%, so should pass
+	if !result.Valid {
+		t.Errorf("Expected valid with default type strictness, got errors: %v", result.Errors)
+	}
+}
+
+func TestValidateTemplate_MinColumns(t *testing.T) {
+	workbook := &models.Workbook{
+		Sheets: []models.Sheet{
+			{
+				Name: "Sheet1",
+				Tables: []models.Table{
+					{
+						Name:    "Table1",
+						Headers: []string{"A", "B"}, // Only 2 columns
+						Rows: []models.Row{
+							{Index: 0, Values: map[string]models.Cell{
+								"A": {RawValue: "1", Type: models.CellTypeString},
+								"B": {RawValue: "2", Type: models.CellTypeString},
+							}},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Test: MinColumns not met
+	template := Template{
+		SheetSchemas: map[string]SheetSchema{
+			"Sheet1": {
+				MinColumns: 5, // Requires 5 columns, table has 2
+			},
+		},
+	}
+
+	result := ValidateTemplate(workbook, template)
+	if result.Valid {
+		t.Error("Expected invalid for table with too few columns")
+	}
+}
+
+func TestSchemaBuilder_Custom(t *testing.T) {
+	customFn := func(table *models.Table) error {
+		if len(table.Rows) == 0 {
+			return errors.New("table must have rows")
+		}
+		return nil
+	}
+
+	schema := NewSchema().
+		Custom(customFn).
+		Build()
+
+	if schema.CustomValidation == nil {
+		t.Error("Expected CustomValidation to be set")
+	}
+}
+
+func TestValidateColumns_CaseInsensitive(t *testing.T) {
+	table := &models.Table{
+		Headers: []string{"ID", "Name", "EMAIL"}, // Mixed case
+	}
+
+	// Test: Case-insensitive match should work
+	missing := ValidateColumns(table, "id", "name", "email")
+	if len(missing) != 0 {
+		t.Errorf("Expected no missing columns with case-insensitive match, got: %v", missing)
+	}
+
+	// Test: Exact match also works
+	missing = ValidateColumns(table, "ID", "Name", "EMAIL")
+	if len(missing) != 0 {
+		t.Errorf("Expected no missing columns with exact match, got: %v", missing)
+	}
+}
+
+func TestValidateTemplate_RequiredSheetWithNoSchema(t *testing.T) {
+	workbook := &models.Workbook{
+		Sheets: []models.Sheet{
+			{
+				Name: "Sales",
+				Tables: []models.Table{
+					{Name: "Table1", Headers: []string{"A"}, Rows: []models.Row{{Index: 0}}},
+				},
+			},
+			{
+				Name:   "EmptySheet",
+				Tables: []models.Table{}, // No tables
+			},
+		},
+	}
+
+	// Test: Required sheet without schema, but sheet has no tables
+	template := Template{
+		RequiredSheets: []string{"Sales", "EmptySheet"},
+		// No SheetSchemas for EmptySheet
+	}
+
+	result := ValidateTemplate(workbook, template)
+	// Should have a warning about EmptySheet having no tables
+	if len(result.Warnings) == 0 {
+		t.Error("Expected warning for required sheet with no tables")
+	}
+}
+
+func TestQuickValidate_EmptyWorkbook(t *testing.T) {
+	workbook := &models.Workbook{
+		Sheets: []models.Sheet{}, // Empty
+	}
+
+	result := QuickValidate(workbook, "ID")
+	if result.Valid {
+		t.Error("Expected invalid for empty workbook")
+	}
+}
+
+func TestValidateTemplate_TypeStrictnessModerate(t *testing.T) {
+	workbook := &models.Workbook{
+		Sheets: []models.Sheet{
+			{
+				Name: "Sheet1",
+				Tables: []models.Table{
+					{
+						Name:    "Table1",
+						Headers: []string{"Value"},
+						Rows: []models.Row{
+							{Index: 0, Values: map[string]models.Cell{
+								"Value": {RawValue: "100", Type: models.CellTypeNumber, Value: 100.0},
+							}},
+							{Index: 1, Values: map[string]models.Cell{
+								"Value": {RawValue: "text", Type: models.CellTypeString, Value: "text"},
+							}},
+							{Index: 2, Values: map[string]models.Cell{
+								"Value": {RawValue: "200", Type: models.CellTypeNumber, Value: 200.0},
+							}},
+							{Index: 3, Values: map[string]models.Cell{
+								"Value": {RawValue: "300", Type: models.CellTypeNumber, Value: 300.0},
+							}},
+							{Index: 4, Values: map[string]models.Cell{
+								"Value": {RawValue: "text2", Type: models.CellTypeString, Value: "text2"},
+							}},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Test: TypeStrictness moderate (80% threshold)
+	// 3/5 = 60% match, should fail with moderate
+	template := Template{
+		SheetSchemas: map[string]SheetSchema{
+			"Sheet1": {
+				ColumnTypes: map[string]models.CellType{
+					"Value": models.CellTypeNumber,
+				},
+				TypeStrictness: 1, // Moderate (80% threshold)
+			},
+		},
+	}
+
+	result := ValidateTemplate(workbook, template)
+	if result.Valid {
+		t.Error("Expected invalid with moderate type strictness (60% < 80%)")
+	}
+}
+
+func TestValidateColumns_ExactMatchWhenCaseInsensitiveFound(t *testing.T) {
+	table := &models.Table{
+		Headers: []string{"id", "Name"}, // lowercase "id"
+	}
+
+	// Test: Request "ID" (uppercase), case-insensitive finds "id", but exact match fails
+	// The code should still find it via case-insensitive match
+	missing := ValidateColumns(table, "ID")
+	if len(missing) != 0 {
+		t.Errorf("Expected case-insensitive match to find 'id' for 'ID', got missing: %v", missing)
 	}
 }

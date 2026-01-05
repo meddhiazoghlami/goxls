@@ -1,0 +1,31 @@
+# Build artifacts
+bin/
+coverage.out
+coverage.html
+
+# IDE and editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Documentation (not needed in image)
+*.md
+!README.md
+
+# CI/CD
+.github/
+
+# Claude
+.claude/
+
+# Test data (optional - comment out if you want testdata in image)
+testdata/
+
+# Examples (not needed in runtime image)
+examples/

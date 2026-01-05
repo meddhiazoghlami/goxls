@@ -4,9 +4,8 @@ A lightweight, high-performance Go library for reading Excel files (.xlsx) with 
 
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![CI](https://github.com/meddhiazoghlami/goxls/actions/workflows/ci.yml/badge.svg)](https://github.com/meddhiazoghlami/goxls/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](https://github.com/meddhiazoghlami/goxls)
+[![Coverage](https://img.shields.io/badge/coverage-97%25-brightgreen)](https://github.com/meddhiazoghlami/goxls)
 [![Go Reference](https://pkg.go.dev/badge/github.com/meddhiazoghlami/goxls.svg)](https://pkg.go.dev/github.com/meddhiazoghlami/goxls)
-
 
 ## Overview
 
@@ -14,22 +13,17 @@ Goxls automatically detects and extracts tabular data from Excel spreadsheets wi
 
 ## Features
 
-- **Automatic Table Detection** - Identifies table boundaries using density analysis and pattern recognition
-- **Smart Header Detection** - Automatically identifies header rows using scoring algorithms
-- **Type Inference** - Detects cell types: strings, numbers, dates, booleans, and formulas
-- **Formula Extraction** - Extracts formula strings from cells (e.g., `=SUM(A1:A10)`)
-- **Cell Comments Support** - Reads cell comments/notes from Excel files
-- **Hyperlink Support** - Extracts hyperlinks from cells (URLs, mailto, internal references)
-- **Merged Cell Support** - Detects merged regions, expands values, and tracks merge metadata
-- **Multi-Table Support** - Extracts multiple tables from a single sheet
-- **Concurrent Processing** - Process multiple sheets in parallel for better performance
-- **Named Range Support** - Read Excel named ranges and extract them as tables
-- **Data Validation** - Validate table data against customizable rules
-- **Excel Date Handling** - Converts Excel serial dates to Go `time.Time` (handles the 1900 leap year bug)
-- **Multiple Export Formats** - Export to JSON, CSV, or SQL with configurable options
-- **SQL Dialect Support** - Generate SQL for MySQL, PostgreSQL, SQLite, or generic SQL
-- **Configurable Detection** - Fine-tune table detection parameters for edge cases
-- **High Test Coverage** - 95%+ test coverage across all packages
+| Category | Features |
+|----------|----------|
+| **Detection** | Automatic table detection, smart header detection, type inference |
+| **Data Types** | Strings, numbers, dates, booleans, formulas |
+| **Cell Features** | Merged cells, comments, hyperlinks, formulas |
+| **Processing** | Multi-table support, concurrent sheet processing, named ranges |
+| **Transformations** | Filter, Select, Rename, Reorder, Deduplicate |
+| **Aggregations** | GroupBy, Sum, Count, Avg, Min, Max |
+| **Validation** | Data validation rules, template validation |
+| **Export** | JSON, CSV, SQL (MySQL, PostgreSQL, SQLite) |
+| **Schema** | Go struct generation from tables |
 
 ## Installation
 
@@ -37,9 +31,20 @@ Goxls automatically detects and extracts tabular data from Excel spreadsheets wi
 go get github.com/meddhiazoghlami/goxls
 ```
 
+### Docker
+
+```bash
+# Pull or build
+docker build -t goxls .
+
+# Run
+docker run --rm -v "$(pwd):/data" goxls myfile.xlsx
+docker run --rm -v "$(pwd):/data" goxls -f json --pretty data.xlsx
+```
+
 ## Quick Start
 
-### Basic Usage (Simplified API)
+### Basic Usage
 
 ```go
 package main
@@ -52,19 +57,15 @@ import (
 )
 
 func main() {
-    // Read an Excel file with one import
     workbook, err := goxls.ReadFile("data.xlsx")
     if err != nil {
         log.Fatal(err)
     }
 
-    // Iterate through sheets and tables
     for _, sheet := range workbook.Sheets {
-        fmt.Printf("Sheet: %s\n", sheet.Name)
-
         for _, table := range sheet.Tables {
-            fmt.Printf("  Table: %s (%d rows)\n", table.Name, table.RowCount())
-            fmt.Printf("  Headers: %v\n", table.Headers)
+            fmt.Printf("Table: %s (%d rows)\n", table.Name, table.RowCount())
+            fmt.Printf("Headers: %v\n", table.Headers)
         }
     }
 }
@@ -73,7 +74,6 @@ func main() {
 ### With Options
 
 ```go
-// Configure detection parameters
 workbook, err := goxls.ReadFile("data.xlsx",
     goxls.WithMinColumns(3),
     goxls.WithMinRows(5),
@@ -82,7 +82,7 @@ workbook, err := goxls.ReadFile("data.xlsx",
 )
 ```
 
-### With Context (for cancellation/timeout)
+### With Context (Timeout/Cancellation)
 
 ```go
 ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -99,526 +99,374 @@ if errors.Is(err, goxls.ErrFileNotFound) {
     log.Fatal("File does not exist")
 }
 if errors.Is(err, goxls.ErrNoTablesFound) {
-    log.Fatal("No tables detected in file")
+    log.Fatal("No tables detected")
 }
 ```
 
-### Advanced Usage (Package-Level Access)
+## Data Transformations
+
+### Filtering
 
 ```go
-package main
-
-import (
-    "fmt"
-    "github.com/meddhiazoghlami/goxls/pkg/reader"
-)
-
-func main() {
-    // Full control with the reader package
-    wr := reader.NewWorkbookReader()
-    workbook, err := wr.ReadFile("data.xlsx")
-    if err != nil {
-        panic(err)
-    }
-
-    for _, sheet := range workbook.Sheets {
-        for _, table := range sheet.Tables {
-            for _, row := range table.Rows {
-                if cell, ok := row.Get("Name"); ok {
-                    fmt.Printf("Name: %s\n", cell.AsString())
-                }
-            }
-        }
-    }
-}
-```
-
-### Export to JSON
-
-```go
-// Simple export (using root package)
-jsonStr, err := goxls.ToJSON(table)
-jsonPretty, err := goxls.ToJSONPretty(table)
-
-// With advanced options (using export package)
-import "github.com/meddhiazoghlami/goxls/pkg/export"
-
-opts := export.DefaultJSONOptions()
-opts.Pretty = true
-opts.SelectedColumns = []string{"Name", "Email", "Age"}
-
-exporter := export.NewJSONExporter(opts)
-result, err := exporter.ExportString(table)
-```
-
-### Export to CSV
-
-```go
-// Simple export (using root package)
-csvStr, err := goxls.ToCSV(table)
-tsvStr, err := goxls.ToTSV(table)
-csvSemi, err := goxls.ToCSVWithDelimiter(table, ';')
-
-// With advanced options (using export package)
-import "github.com/meddhiazoghlami/goxls/pkg/export"
-
-opts := export.DefaultCSVOptions()
-opts.Delimiter = ';'
-opts.QuoteAll = true
-
-exporter := export.NewCSVExporter(opts)
-result, err := exporter.ExportString(table)
-```
-
-### Export to SQL
-
-```go
-// Simple export (using root package)
-sqlStr, err := goxls.ToSQL(table, "users")
-sqlCreate, err := goxls.ToSQLWithCreate(table, "users")
-
-// With advanced options (using export package)
-import "github.com/meddhiazoghlami/goxls/pkg/export"
-
-opts := export.DefaultSQLOptions()
-opts.TableName = "employees"
-opts.Dialect = export.DialectPostgreSQL
-opts.CreateTable = true
-opts.BatchSize = 100
-
-exporter := export.NewSQLExporter(opts)
-result, err := exporter.ExportString(table)
-```
-
-### Excel Date Conversion
-
-```go
-import "github.com/meddhiazoghlami/goxls/pkg/dateutil"
-
-// Convert Excel serial date to Go time.Time
-// Serial 45658 = January 1, 2025
-t := dateutil.ExcelDateToTime(45658)
-
-// Convert Go time back to Excel serial
-serial := dateutil.TimeToExcelDate(time.Now())
-
-// Format Excel date directly
-formatted := dateutil.FormatExcelDate(45658, "2006-01-02")
-// Output: "2025-01-01"
-
-// Convert with specific timezone
-loc, _ := time.LoadLocation("America/New_York")
-t = dateutil.ExcelDateToTimeWithLocation(45658, loc)
-```
-
-## API Reference
-
-### Package `reader`
-
-The main entry point for reading Excel files.
-
-```go
-// Create a reader with default configuration
-wr := reader.NewWorkbookReader()
-
-// Create a reader with custom configuration
-config := models.DetectionConfig{
-    MinColumns:         2,     // Minimum columns for table detection
-    MinRows:            2,     // Minimum rows for table detection
-    MaxEmptyRows:       2,     // Max empty rows before table boundary
-    HeaderDensity:      0.5,   // Min density for header row
-    ColumnConsistency:  0.7,   // Min type consistency for columns
-    ExpandMergedCells:  true,  // Copy merged cell value to all cells in range
-    TrackMergeMetadata: true,  // Populate IsMerged and MergeRange fields
-}
-wr := reader.NewWorkbookReaderWithConfig(config)
-
-// Read entire workbook
-workbook, err := wr.ReadFile("file.xlsx")
-
-// Read with concurrent sheet processing (faster for multi-sheet workbooks)
-workbook, err := wr.ReadFileParallel("file.xlsx")
-
-// Read specific sheet
-sheet, err := wr.ReadSheet("file.xlsx", "Sheet1")
-
-// Utility functions
-table := reader.GetTableByName(workbook, "Sheet1_Table1")
-tables := reader.GetAllTables(workbook)
-```
-
-### Package `models`
-
-Core data structures for representing Excel data.
-
-```go
-// Workbook - represents an entire Excel file
-type Workbook struct {
-    FilePath string
-    Sheets   []Sheet
-}
-
-// Sheet - represents a worksheet
-type Sheet struct {
-    Name   string
-    Index  int
-    Tables []Table
-}
-
-// Table - represents a detected table
-type Table struct {
-    Name      string
-    Headers   []string
-    Rows      []Row
-    StartRow  int
-    EndRow    int
-    StartCol  int
-    EndCol    int
-    HeaderRow int
-}
-
-// Row - represents a data row
-type Row struct {
-    Index  int
-    Values map[string]Cell
-    Cells  []Cell
-}
-
-// Cell - represents a single cell
-type Cell struct {
-    Value        interface{}
-    Type         CellType     // Empty, String, Number, Date, Bool, Formula
-    Row          int
-    Col          int
-    RawValue     string
-    IsMerged     bool         // true if part of a merged region
-    MergeRange   *MergeRange  // merge info (nil if not merged)
-    Formula      string       // formula string if cell contains a formula
-    HasFormula   bool         // true if cell contains a formula
-    Comment      string       // cell comment text (if any)
-    HasComment   bool         // true if cell has a comment
-    Hyperlink    string       // hyperlink URL (if any)
-    HasHyperlink bool         // true if cell has a hyperlink
-}
-
-// MergeRange - represents a merged cell region
-type MergeRange struct {
-    StartRow int
-    StartCol int
-    EndRow   int
-    EndCol   int
-    IsOrigin bool  // true if this cell is the top-left of the merge
-}
-
-// ColumnStats - statistical analysis for a column
-type ColumnStats struct {
-    Name            string
-    Index           int
-    InferredType    CellType
-    TotalCount      int
-    EmptyCount      int
-    UniqueCount     int
-    StringCount     int
-    NumberCount     int
-    DateCount       int
-    BoolCount       int
-    SampleValues    []string  // Up to 5 unique values
-    Min             float64   // Minimum (only if HasNumericStats)
-    Max             float64   // Maximum (only if HasNumericStats)
-    Sum             float64   // Sum (only if HasNumericStats)
-    Avg             float64   // Average (only if HasNumericStats)
-    HasNumericStats bool      // True if numeric stats are valid
-}
-
-// Get column statistics
-stats := table.AnalyzeColumns()
-for _, col := range stats {
-    fmt.Printf("Column: %s, Type: %v, Unique: %d\n", col.Name, col.InferredType, col.UniqueCount)
-    if col.HasNumericStats {
-        fmt.Printf("  Min: %.2f, Max: %.2f, Avg: %.2f\n", col.Min, col.Max, col.Avg)
-    }
-}
-
-// Filter rows using a predicate function
-filtered := table.Filter(func(row Row) bool {
+// Filter rows with a predicate
+adults := table.Filter(func(row goxls.Row) bool {
     if cell, ok := row.Get("Age"); ok {
         if val, ok := cell.AsFloat(); ok {
-            return val > 18
+            return val >= 18
         }
     }
     return false
 })
 
-// Chain filters for complex queries
-active := table.Filter(isActive).Filter(hasValidEmail)
+// Chain filters
+result := table.Filter(isActive).Filter(hasEmail).Filter(isVerified)
+```
 
-// Compare two tables and find differences
-result := DiffTables(oldTable, newTable, "ID") // Use "ID" as key column
+### Column Operations
 
-if result.HasChanges() {
-    fmt.Printf("Added: %d, Removed: %d, Modified: %d\n",
-        len(result.AddedRows), len(result.RemovedRows), len(result.ModifiedRows))
-}
+```go
+// Select specific columns
+subset := table.Select("Name", "Email", "Phone")
 
-// Inspect what changed in modified rows
-for _, mod := range result.ModifiedRows {
-    for _, change := range mod.Changes {
-        fmt.Printf("%s: %s -> %s\n", change.Column, change.OldValue, change.NewValue)
-    }
-}
+// Rename columns
+renamed := table.Rename(map[string]string{
+    "user_name": "Name",
+    "user_email": "Email",
+})
 
-// Find and remove duplicate rows
-duplicates := table.FindDuplicates("Email")      // Get duplicate rows
-unique := table.Deduplicate("Email")             // Remove duplicates
-groups := table.FindDuplicateGroups("Email")     // Get groups with counts
-
-// Column transformations
-selected := table.Select("Name", "Email")        // Keep only these columns
-renamed := table.Rename(map[string]string{"old": "new"})  // Rename columns
-reordered := table.Reorder("Email", "Name")      // Change column order
+// Reorder columns
+reordered := table.Reorder("Email", "Name", "Phone")
 
 // Chain transformations
 result := table.Select("name", "email").Rename(map[string]string{"name": "Name"})
 ```
 
-### Package `export`
-
-Export tables to various formats.
-
-| Function | Description |
-|----------|-------------|
-| `ToJSON(table)` | Export to JSON with defaults |
-| `ToCSV(table)` | Export to CSV with defaults |
-| `ToSQL(table, tableName)` | Export to SQL INSERT statements |
-| `NewExporter(format, opts)` | Create exporter with custom options |
-
-**Supported Formats:**
-- `FormatJSON` - JSON array of objects
-- `FormatCSV` - Comma-separated values
-- `FormatSQL` - SQL INSERT statements
-
-**SQL Dialects:**
-- `DialectGeneric` - Standard SQL
-- `DialectMySQL` - MySQL-specific syntax
-- `DialectPostgreSQL` - PostgreSQL-specific syntax
-- `DialectSQLite` - SQLite-specific syntax
-
-### Package `dateutil`
-
-Excel date conversion utilities.
-
-| Function | Description |
-|----------|-------------|
-| `ExcelDateToTime(serial)` | Convert Excel serial to `time.Time` |
-| `TimeToExcelDate(t)` | Convert `time.Time` to Excel serial |
-| `IsExcelDateSerial(value)` | Check if value is likely an Excel date |
-| `ExcelDateToTimeWithLocation(serial, loc)` | Convert with timezone |
-| `FormatExcelDate(serial, layout)` | Convert and format in one call |
-
-### Package `validation`
-
-Validate table data against defined rules.
+### Deduplication
 
 ```go
-import "github.com/meddhiazoghlami/goxls/pkg/validation"
+// Find duplicate rows by key column
+duplicates := table.FindDuplicates("Email")
 
-// Using the fluent RuleBuilder API
+// Remove duplicates (keep first occurrence)
+unique := table.Deduplicate("Email")
+
+// Get duplicate groups with counts
+groups := table.FindDuplicateGroups("Email")
+for _, g := range groups {
+    fmt.Printf("Value: %s, Count: %d\n", g.KeyValue, g.Count)
+}
+```
+
+## Aggregations
+
+Perform SQL-like GROUP BY operations with aggregation functions.
+
+```go
+// Basic aggregation
+result := table.GroupBy("Category").Aggregate(
+    goxls.Sum("Amount"),
+    goxls.Count("ID"),
+    goxls.Avg("Price"),
+    goxls.Min("Date"),
+    goxls.Max("Date"),
+)
+
+// Multiple group columns
+result := table.GroupBy("Region", "Category").Aggregate(
+    goxls.Sum("Sales").As("TotalSales"),
+    goxls.Count("OrderID").As("NumOrders"),
+)
+
+// Access results
+for _, row := range result.Rows {
+    category, _ := row.Get("Category")
+    total, _ := row.Get("TotalSales")
+    fmt.Printf("%s: %s\n", category.AsString(), total.AsString())
+}
+```
+
+**Available Functions:**
+| Function | Description |
+|----------|-------------|
+| `Sum(col)` | Sum of numeric values |
+| `Count(col)` | Count of non-empty cells |
+| `Avg(col)` | Average of numeric values |
+| `Min(col)` | Minimum numeric value |
+| `Max(col)` | Maximum numeric value |
+
+Use `.As("alias")` to customize output column names.
+
+## Column Analysis
+
+```go
+stats := table.AnalyzeColumns()
+
+for _, col := range stats {
+    fmt.Printf("Column: %s\n", col.Name)
+    fmt.Printf("  Type: %v, Unique: %d, Empty: %d\n",
+        col.InferredType, col.UniqueCount, col.EmptyCount)
+
+    if col.HasNumericStats {
+        fmt.Printf("  Min: %.2f, Max: %.2f, Avg: %.2f\n",
+            col.Min, col.Max, col.Avg)
+    }
+}
+```
+
+## Table Comparison
+
+```go
+diff := goxls.DiffTables(oldTable, newTable, "ID")
+
+if diff.HasChanges() {
+    fmt.Printf("Added: %d, Removed: %d, Modified: %d\n",
+        len(diff.AddedRows), len(diff.RemovedRows), len(diff.ModifiedRows))
+
+    for _, mod := range diff.ModifiedRows {
+        for _, change := range mod.Changes {
+            fmt.Printf("%s: %s -> %s\n",
+                change.Column, change.OldValue, change.NewValue)
+        }
+    }
+}
+```
+
+## Export
+
+### JSON
+
+```go
+jsonStr, _ := goxls.ToJSON(table)
+jsonPretty, _ := goxls.ToJSONPretty(table)
+
+// With options
+opts := export.DefaultJSONOptions()
+opts.Pretty = true
+opts.SelectedColumns = []string{"Name", "Email"}
+result, _ := export.NewJSONExporter(opts).ExportString(table)
+```
+
+### CSV
+
+```go
+csvStr, _ := goxls.ToCSV(table)
+tsvStr, _ := goxls.ToTSV(table)
+csvSemi, _ := goxls.ToCSVWithDelimiter(table, ';')
+```
+
+### SQL
+
+```go
+sqlStr, _ := goxls.ToSQL(table, "users")
+sqlCreate, _ := goxls.ToSQLWithCreate(table, "users")
+
+// With dialect
+opts := export.DefaultSQLOptions()
+opts.Dialect = export.DialectPostgreSQL
+opts.CreateTable = true
+opts.BatchSize = 100
+result, _ := export.NewSQLExporter(opts).ExportString(table)
+```
+
+**Supported Dialects:** `DialectGeneric`, `DialectMySQL`, `DialectPostgreSQL`, `DialectSQLite`
+
+## Validation
+
+### Data Validation
+
+```go
 rules := []validation.ValidationRule{
-    validation.ForColumn("Email").Required().MatchesPattern(`^[\w.-]+@[\w.-]+\.\w+$`).Build(),
-    validation.ForColumn("Age").Range(18, 120).Build(),
-    validation.ForColumn("Status").OneOf("active", "inactive", "pending").Build(),
+    validation.ForColumn("Email").
+        Required().
+        MatchesPattern(`^[\w.-]+@[\w.-]+\.\w+$`).
+        Build(),
+    validation.ForColumn("Age").
+        Range(18, 120).
+        Build(),
+    validation.ForColumn("Status").
+        OneOf("active", "inactive", "pending").
+        Build(),
 }
 
-// Or using struct directly
-rules := []validation.ValidationRule{
-    {Column: "Name", Required: true},
-    {Column: "Price", MinVal: 0, MinValSet: true},
-}
-
-// Validate a table
 result := validation.ValidateTable(table, rules)
 if !result.Valid {
     for _, err := range result.Errors {
         fmt.Printf("Row %d, %s: %s\n", err.Row, err.Column, err.Message)
     }
 }
-
-// Group errors for analysis
-byColumn := result.ErrorsByColumn()
-byRow := result.ErrorsByRow()
 ```
 
-**Validation Rule Options:**
-- `Required` - Field cannot be empty
-- `Pattern` - Value must match regex pattern
-- `MinVal/MaxVal` - Numeric range validation
-- `AllowedValues` - Value must be in allowed list
-- `CustomFunc` - Custom validation function
+### Template Validation
 
-### Named Ranges
-
-Read Excel named ranges directly as tables.
+Validate workbook structure against a schema:
 
 ```go
-import "github.com/meddhiazoghlami/goxls/pkg/reader"
+template := goxls.NewTemplate("SalesTemplate").
+    RequireSheets("Sales", "Inventory").
+    StrictSheets().
+    Sheet("Sales", goxls.NewSchema().
+        RequireColumns("Date", "Amount", "Product").
+        ColumnType("Amount", goxls.CellTypeNumber).
+        RowCount(1, 1000).
+        Build()).
+    Build()
 
-// Create a named range reader
+result := goxls.ValidateTemplate(workbook, template)
+if !result.Valid {
+    for _, err := range result.Errors {
+        fmt.Printf("[%s] %s\n", err.Type.String(), err.Message)
+    }
+}
+```
+
+## Schema Generation
+
+Generate Go structs from table headers:
+
+```go
+code, _ := goxls.GenerateStruct(table, "Person")
+// Output:
+// type Person struct {
+//     Name   string  `excel:"Name"`
+//     Age    float64 `excel:"Age"`
+//     Email  string  `excel:"Email"`
+// }
+
+// With options
+opts := &goxls.SchemaOptions{
+    StructName:  "Employee",
+    PackageName: "models",
+    JSONTags:    true,
+    OmitEmpty:   true,
+}
+code, _ := goxls.GenerateStructWithOptions(table, opts)
+```
+
+## Named Ranges
+
+```go
 nr := reader.NewNamedRangeReader()
 
-// List all named ranges in a file
+// List named ranges
 ranges, _ := nr.GetNamedRanges("data.xlsx")
 for _, r := range ranges {
-    fmt.Printf("Name: %s, RefersTo: %s, Scope: %s\n", r.Name, r.RefersTo, r.Scope)
+    fmt.Printf("%s -> %s\n", r.Name, r.RefersTo)
 }
 
-// Read a named range as a table
+// Read as table
 table, _ := nr.ReadRange("data.xlsx", "SalesData")
-fmt.Printf("Table: %s with %d rows\n", table.Name, len(table.Rows))
-
-// Helper functions
-r := reader.GetNamedRangeByName(ranges, "MyRange")
-global := reader.GetGlobalNamedRanges(ranges)        // Workbook-scoped ranges
-byScope := reader.GetNamedRangesByScope(ranges, "Sheet1")  // Sheet-scoped ranges
-
-// Parse range reference info
-info, _ := reader.ParseNamedRangeInfo("Sheet1!$A$1:$B$10")
-fmt.Printf("Sheet: %s, Start: %s, End: %s\n", info.SheetName, info.StartCell, info.EndCell)
 ```
 
-## CLI Usage
+## Date Conversion
+
+```go
+import "github.com/meddhiazoghlami/goxls/pkg/dateutil"
+
+// Excel serial to time.Time
+t := dateutil.ExcelDateToTime(45658) // Jan 1, 2025
+
+// time.Time to Excel serial
+serial := dateutil.TimeToExcelDate(time.Now())
+
+// Format directly
+formatted := dateutil.FormatExcelDate(45658, "2006-01-02") // "2025-01-01"
+
+// With timezone
+loc, _ := time.LoadLocation("America/New_York")
+t = dateutil.ExcelDateToTimeWithLocation(45658, loc)
+```
+
+## CLI
 
 ```bash
-# Build the CLI
-go build -o goxls ./cmd/main.go
+# Build
+make build
 
-# Read and analyze an Excel file
-./goxls data.xlsx
+# Basic usage
+./bin/goxls data.xlsx
 
-# Export to JSON (pretty printed)
-./goxls -f json --pretty data.xlsx
+# Export formats
+./bin/goxls -f json --pretty data.xlsx
+./bin/goxls -f csv -o output.csv data.xlsx
+./bin/goxls -f sql --sql-table=users data.xlsx
 
-# Export to CSV
-./goxls -f csv -o output.csv data.xlsx
+# Filtering
+./bin/goxls -s Sales data.xlsx           # By sheet
+./bin/goxls -t Sales_Table1 data.xlsx    # By table
+./bin/goxls -c "Name,Email" data.xlsx    # By columns
 
-# Export to SQL
-./goxls -f sql --sql-table=users data.xlsx
-
-# Filter by sheet name
-./goxls -s Sales data.xlsx
-
-# Filter by table name
-./goxls -t Sales_Table1 data.xlsx
-
-# Select specific columns
-./goxls -f csv -c "Name,Email,Age" data.xlsx
-
-# Quick summary with column type analysis
-./goxls --summary data.xlsx
+# Summary
+./bin/goxls --summary data.xlsx
 ```
-
-### CLI Options
 
 | Option | Short | Description |
 |--------|-------|-------------|
-| `--format` | `-f` | Output format: json, csv, sql, text (default: text) |
-| `--output` | `-o` | Output file path (default: stdout) |
+| `--format` | `-f` | Output: json, csv, sql, text |
+| `--output` | `-o` | Output file (default: stdout) |
 | `--sheet` | `-s` | Filter by sheet name |
 | `--table` | `-t` | Filter by table name |
-| `--columns` | `-c` | Comma-separated columns to include |
-| `--sql-table` | | Table name for SQL output (default: data) |
-| `--summary` | | Show summary with column type analysis |
-| `--pretty` | | Pretty print JSON output |
-| `--no-headers` | | Exclude headers from CSV output |
+| `--columns` | `-c` | Columns to include |
+| `--sql-table` | | SQL table name |
+| `--summary` | | Show analysis summary |
+| `--pretty` | | Pretty print JSON |
 
-### Example Output
+## Make Commands
 
+```bash
+make build        # Build CLI binary
+make test         # Run tests
+make cover        # Coverage report
+make docker       # Build Docker image
+make docker-test  # Test Docker image
+make check        # Run fmt + vet + test
+make help         # Show all commands
 ```
-=== Workbook Summary ===
-File: data.xlsx
-Sheets: 2
-Total Tables Detected: 3
-
-=== Sheet: Sales ===
-
-  Table: Sales_Table1
-  Location: Row 1-150, Col 1-5
-  Header Row: 1
-  Columns: 5
-  Rows: 149
-  Headers: [Date Product Quantity Price Total]
-  Sample Data (first 3 rows):
-    Row 2: Date="2025-01-01", Product="Widget", Quantity="10", Price="25.00", Total="250.00"
-    ...
-```
-
-## Known Limitations
-
-- **No .xls Support** - Only .xlsx format (Office 2007+) is supported
-- **Large Files** - Entire file is loaded into memory; not suitable for very large files (100k+ rows)
-- **No Write Support** - Read-only; cannot create or modify Excel files
-- **No Formula Evaluation** - Formulas are extracted as strings but not evaluated
 
 ## Test Coverage
 
-| Package | Coverage | Tests |
-|---------|----------|-------|
-| `pkg/dateutil` | 100% | 10 test functions |
-| `pkg/models` | 96.8% | Full coverage |
-| `pkg/reader` | 96.9% | 350+ tests |
-| `pkg/export` | 95.4% | 60+ tests |
-| `pkg/validation` | 95.1% | 25+ tests |
-| **Total** | **95%+** | 450+ tests |
+| Package | Coverage |
+|---------|----------|
+| `pkg/dateutil` | 100% |
+| `pkg/models` | 99.0% |
+| `pkg/validation` | 98.7% |
+| `pkg/schema` | 96.6% |
+| `pkg/reader` | 96.1% |
+| `pkg/export` | 95.4% |
+| **Total** | **97%** |
 
-Run tests:
 ```bash
-go test ./... -v
 go test ./... -cover
 ```
 
+## Limitations
+
+- **Format:** Only .xlsx (Office 2007+), no .xls support
+- **Memory:** Entire file loaded into memory; not suitable for very large files
+- **Read-only:** Cannot create or modify Excel files
+- **Formulas:** Extracted as strings, not evaluated
+
 ## Roadmap
 
-### Completed
-- [x] Merged cell support (value expansion, metadata tracking, multi-row headers)
-- [x] Column type inference and statistics (`table.AnalyzeColumns()`) with Min/Max/Sum/Avg
-- [x] Row filtering (`table.Filter()`) with chainable predicates
-- [x] Table diff (`DiffTables()`) to compare tables and find changes
-- [x] Row deduplication (`FindDuplicates()`, `Deduplicate()`)
-- [x] Column transformations (`Select()`, `Rename()`, `Reorder()`)
-- [x] Performance benchmarks
-- [x] CLI enhancements (output formats, filtering, column selection)
-- [x] Formula extraction (read formula strings from cells)
-- [x] Data validation (validate table data against rules)
-- [x] Named range support (read named ranges as tables)
-- [x] Cell comments support (read comments/notes from cells)
-- [x] Hyperlink support (extract hyperlinks from cells)
-- [x] Concurrent sheet processing (`ReadFileParallel()`)
+See [ROADMAP.md](ROADMAP.md) for detailed feature plans.
 
-### Medium Priority
-- [ ] Streaming reader for large files
-- [ ] Write support (create Excel files)
+**Completed:**
+- Automatic table/header detection
+- Type inference and column statistics
+- Merged cells, comments, hyperlinks
+- Data transformations (Filter, Select, Rename, Reorder)
+- Aggregations (GroupBy, Sum, Count, Avg, Min, Max)
+- Data and template validation
+- Export (JSON, CSV, SQL)
+- Schema generation
+- Concurrent processing
+- Docker support
+- CLI
 
-### Future
-- [ ] gRPC/REST API wrapper
-- [ ] Concurrent sheet processing
-- [ ] Formula evaluation
-- [ ] Legacy .xls format support
-
-See [ROADMAP.md](ROADMAP.md) for detailed feature descriptions.
-
-## Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Write tests for your changes
-4. Ensure all tests pass (`go test ./...`)
-5. Maintain or improve test coverage
-6. Submit a pull request
-
-Priority should be given to High Priority roadmap items.
+**Planned:**
+- Streaming reader for large files
+- Write support (create Excel files)
+- Formula evaluation
 
 ## Acknowledgments
 
-- [excelize](https://github.com/xuri/excelize) - Underlying Excel file parsing
-- Inspired by the need for intelligent Excel parsing without predefined schemas
+- [excelize](https://github.com/xuri/excelize) - Excel file parsing

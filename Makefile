@@ -1,10 +1,14 @@
-.PHONY: all build test clean install lint fmt vet cover help examples
+.PHONY: all build test clean install lint fmt vet cover help examples docker docker-build docker-run docker-push
 
 # Binary name
 BINARY=goxls
 
 # Build directory
 BUILD_DIR=bin
+
+# Docker settings
+DOCKER_IMAGE=goxls
+DOCKER_TAG=latest
 
 # Go parameters
 GOCMD=go
@@ -118,6 +122,24 @@ run-summary: build
 ## check: Run all checks (fmt, vet, test)
 check: fmt vet test
 	@echo "All checks passed!"
+
+## docker: Build Docker image (alias for docker-build)
+docker: docker-build
+
+## docker-build: Build Docker image
+docker-build:
+	@echo "Building Docker image $(DOCKER_IMAGE):$(DOCKER_TAG)..."
+	docker build -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
+	@echo "Docker image built: $(DOCKER_IMAGE):$(DOCKER_TAG)"
+
+## docker-run: Run goxls in Docker (usage: make docker-run ARGS="file.xlsx")
+docker-run:
+	@docker run --rm -v "$(PWD):/data" $(DOCKER_IMAGE):$(DOCKER_TAG) $(ARGS)
+
+## docker-test: Test Docker image with sample data
+docker-test: docker-build
+	@echo "Testing Docker image..."
+	@docker run --rm -v "$(PWD)/testdata:/data" $(DOCKER_IMAGE):$(DOCKER_TAG) sample.xlsx --summary
 
 ## help: Show this help message
 help:

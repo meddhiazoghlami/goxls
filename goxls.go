@@ -102,6 +102,15 @@ type (
 
 	// SchemaOptions configures Go struct generation from tables
 	SchemaOptions = schema.SchemaOptions
+
+	// GroupedTable represents a table grouped by one or more columns for aggregation
+	GroupedTable = models.GroupedTable
+
+	// AggregateFunc defines an aggregation operation on a column
+	AggregateFunc = models.AggregateFunc
+
+	// AggregateOp represents the type of aggregation operation
+	AggregateOp = models.AggregateOp
 )
 
 // Re-export CellType constants
@@ -112,6 +121,15 @@ const (
 	CellTypeDate    = models.CellTypeDate
 	CellTypeBool    = models.CellTypeBool
 	CellTypeFormula = models.CellTypeFormula
+)
+
+// Re-export AggregateOp constants for aggregation operations
+const (
+	AggSum   = models.AggSum
+	AggCount = models.AggCount
+	AggAvg   = models.AggAvg
+	AggMin   = models.AggMin
+	AggMax   = models.AggMax
 )
 
 // Re-export TemplateErrorType constants for template validation
@@ -625,4 +643,67 @@ func GenerateStructWithOptions(table *Table, opts *SchemaOptions) (string, error
 //	code, err := goxls.GenerateStructWithOptions(table, opts)
 func DefaultSchemaOptions(structName string) *SchemaOptions {
 	return schema.DefaultOptions(structName)
+}
+
+// --- Aggregation Functions ---
+
+// Sum creates a sum aggregation for the specified column.
+// Use with GroupBy().Aggregate() to compute sums per group.
+//
+// Example:
+//
+//	result := table.GroupBy("Category").Aggregate(
+//	    goxls.Sum("Amount"),
+//	    goxls.Sum("Quantity").As("TotalQty"),
+//	)
+func Sum(column string) AggregateFunc {
+	return models.Sum(column)
+}
+
+// Count creates a count aggregation for the specified column.
+// Counts non-empty cells in the column.
+//
+// Example:
+//
+//	result := table.GroupBy("Category").Aggregate(
+//	    goxls.Count("ID"),
+//	)
+func Count(column string) AggregateFunc {
+	return models.Count(column)
+}
+
+// Avg creates an average aggregation for the specified column.
+// Only numeric values are included in the calculation.
+//
+// Example:
+//
+//	result := table.GroupBy("Category").Aggregate(
+//	    goxls.Avg("Price"),
+//	)
+func Avg(column string) AggregateFunc {
+	return models.Avg(column)
+}
+
+// Min creates a minimum aggregation for the specified column.
+// Only numeric values are considered.
+//
+// Example:
+//
+//	result := table.GroupBy("Category").Aggregate(
+//	    goxls.Min("Price"),
+//	)
+func Min(column string) AggregateFunc {
+	return models.Min(column)
+}
+
+// Max creates a maximum aggregation for the specified column.
+// Only numeric values are considered.
+//
+// Example:
+//
+//	result := table.GroupBy("Category").Aggregate(
+//	    goxls.Max("Price"),
+//	)
+func Max(column string) AggregateFunc {
+	return models.Max(column)
 }
