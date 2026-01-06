@@ -35,6 +35,7 @@ import (
 	"github.com/meddhiazoghlami/goxls/pkg/models"
 	"github.com/meddhiazoghlami/goxls/pkg/reader"
 	"github.com/meddhiazoghlami/goxls/pkg/schema"
+	"github.com/meddhiazoghlami/goxls/pkg/stream"
 	"github.com/meddhiazoghlami/goxls/pkg/validation"
 )
 
@@ -111,6 +112,21 @@ type (
 
 	// AggregateOp represents the type of aggregation operation
 	AggregateOp = models.AggregateOp
+
+	// StreamReader provides row-by-row iteration over Excel sheet data for large files
+	StreamReader = stream.StreamReader
+
+	// StreamRow represents a single row from streaming
+	StreamRow = stream.StreamRow
+
+	// StreamCell represents a single cell from streaming with inferred type
+	StreamCell = stream.StreamCell
+
+	// StreamConfig holds configuration for streaming operations
+	StreamConfig = stream.StreamConfig
+
+	// StreamOption is a functional option for configuring the stream reader
+	StreamOption = stream.StreamOption
 )
 
 // Re-export CellType constants
@@ -202,6 +218,12 @@ var (
 
 	// ErrContextCanceled is returned when the operation was canceled via context
 	ErrContextCanceled = errors.New("goxls: operation canceled")
+
+	// ErrStreamClosed is returned when operations are attempted on a closed stream
+	ErrStreamClosed = stream.ErrStreamClosed
+
+	// ErrNoHeaders is returned when headers are required but not available for streaming
+	ErrNoHeaders = stream.ErrNoHeaders
 )
 
 // Option is a functional option for configuring the reader
@@ -706,4 +728,116 @@ func Min(column string) AggregateFunc {
 //	)
 func Max(column string) AggregateFunc {
 	return models.Max(column)
+}
+
+// --- Streaming Functions ---
+
+// NewStreamReader creates a streaming reader for large Excel files.
+// It processes rows one at a time without loading the entire file into memory.
+//
+// Example:
+//
+//	sr, err := goxls.NewStreamReader("huge_file.xlsx", "Sheet1")
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	defer sr.Close()
+//
+//	for {
+//	    row, err := sr.Next()
+//	    if err == io.EOF {
+//	        break
+//	    }
+//	    if err != nil {
+//	        log.Fatal(err)
+//	    }
+//	    fmt.Println(row.Values["Name"])
+//	}
+func NewStreamReader(filePath, sheetName string, opts ...StreamOption) (*StreamReader, error) {
+	return stream.NewStreamReader(filePath, sheetName, opts...)
+}
+
+// NewStreamReaderWithContext creates a streaming reader with context support for cancellation.
+// The context can be used to cancel long-running streaming operations.
+//
+// Example:
+//
+//	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+//	defer cancel()
+//	sr, err := goxls.NewStreamReaderWithContext(ctx, "huge.xlsx", "Sheet1")
+func NewStreamReaderWithContext(ctx context.Context, filePath, sheetName string, opts ...StreamOption) (*StreamReader, error) {
+	return stream.NewStreamReaderWithContext(ctx, filePath, sheetName, opts...)
+}
+
+// DefaultStreamConfig returns the default streaming configuration.
+func DefaultStreamConfig() StreamConfig {
+	return stream.DefaultStreamConfig()
+}
+
+// --- Streaming Option Functions ---
+
+// WithStreamHeaders sets explicit column headers for streaming.
+// When provided, these headers are used instead of reading from the first row.
+//
+// Example:
+//
+//	sr, _ := goxls.NewStreamReader("data.xlsx", "Sheet1",
+//	    goxls.WithStreamHeaders("ID", "Name", "Amount"),
+//	)
+func WithStreamHeaders(headers ...string) StreamOption {
+	return stream.WithStreamHeaders(headers...)
+}
+
+// WithStreamNoHeaders indicates the file has no header row.
+// Column names will be generated as Column_1, Column_2, etc.
+func WithStreamNoHeaders() StreamOption {
+	return stream.WithStreamNoHeaders()
+}
+
+// WithStreamHasHeaders explicitly enables header reading from first row.
+func WithStreamHasHeaders() StreamOption {
+	return stream.WithStreamHasHeaders()
+}
+
+// WithStreamSkipRows sets the number of rows to skip before reading headers/data.
+//
+// Example:
+//
+//	sr, _ := goxls.NewStreamReader("data.xlsx", "Sheet1",
+//	    goxls.WithStreamSkipRows(2), // Skip 2 title rows
+//	)
+func WithStreamSkipRows(n int) StreamOption {
+	return stream.WithStreamSkipRows(n)
+}
+
+// WithStreamDateFormats sets custom date formats for type detection.
+//
+// Example:
+//
+//	sr, _ := goxls.NewStreamReader("data.xlsx", "Sheet1",
+//	    goxls.WithStreamDateFormats("2006-01-02", "01/02/2006"),
+//	)
+func WithStreamDateFormats(formats ...string) StreamOption {
+	return stream.WithStreamDateFormats(formats...)
+}
+
+// WithStreamTypeDetection enables or disables automatic type detection.
+// When disabled, all values are returned as strings.
+func WithStreamTypeDetection(enabled bool) StreamOption {
+	return stream.WithStreamTypeDetection(enabled)
+}
+
+// WithStreamSkipEmptyRows enables or disables skipping of empty rows.
+func WithStreamSkipEmptyRows(skip bool) StreamOption {
+	return stream.WithStreamSkipEmptyRows(skip)
+}
+
+// WithStreamTrimSpaces enables or disables whitespace trimming.
+func WithStreamTrimSpaces(trim bool) StreamOption {
+	return stream.WithStreamTrimSpaces(trim)
+}
+
+// WithStreamConfig sets the full streaming configuration.
+func WithStreamConfig(config StreamConfig) StreamOption {
+	return stream.WithStreamConfig(config)
 }

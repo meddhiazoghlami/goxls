@@ -19,6 +19,7 @@ Goxls automatically detects and extracts tabular data from Excel spreadsheets wi
 | **Data Types** | Strings, numbers, dates, booleans, formulas |
 | **Cell Features** | Merged cells, comments, hyperlinks, formulas |
 | **Processing** | Multi-table support, concurrent sheet processing, named ranges |
+| **Streaming** | Row-by-row processing for large files (100k+ rows) |
 | **Transformations** | Filter, Select, Rename, Reorder, Deduplicate |
 | **Aggregations** | GroupBy, Sum, Count, Avg, Min, Max |
 | **Validation** | Data validation rules, template validation |
@@ -89,6 +90,56 @@ ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 defer cancel()
 
 workbook, err := goxls.ReadFileWithContext(ctx, "large.xlsx")
+```
+
+### Streaming Large Files
+
+Process large files row-by-row without loading everything into memory:
+
+```go
+sr, err := goxls.NewStreamReader("huge_file.xlsx", "Sheet1")
+if err != nil {
+    log.Fatal(err)
+}
+defer sr.Close()
+
+fmt.Println("Headers:", sr.Headers())
+
+for {
+    row, err := sr.Next()
+    if err == io.EOF {
+        break
+    }
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Process row
+    name, _ := row.Get("Name")
+    fmt.Printf("Row %d: %s\n", row.Index, name.AsString())
+}
+
+// Or use ForEach helper
+sr.ForEach(func(row *goxls.StreamRow) error {
+    // Process each row
+    return nil
+})
+```
+
+**Streaming Options:**
+
+```go
+sr, _ := goxls.NewStreamReader("data.xlsx", "Sheet1",
+    goxls.WithStreamSkipRows(2),           // Skip title rows
+    goxls.WithStreamHeaders("ID", "Name"), // Explicit headers
+    goxls.WithStreamSkipEmptyRows(true),   // Skip empty rows
+    goxls.WithStreamTypeDetection(true),   // Infer cell types
+)
+
+// With context for cancellation
+ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+defer cancel()
+sr, _ := goxls.NewStreamReaderWithContext(ctx, "huge.xlsx", "Sheet1")
 ```
 
 ### Error Handling
@@ -431,6 +482,7 @@ make help         # Show all commands
 | `pkg/validation` | 98.7% |
 | `pkg/schema` | 96.6% |
 | `pkg/reader` | 96.1% |
+| `pkg/stream` | 95%+ |
 | `pkg/export` | 95.4% |
 | **Total** | **97%** |
 
@@ -441,9 +493,9 @@ go test ./... -cover
 ## Limitations
 
 - **Format:** Only .xlsx (Office 2007+), no .xls support
-- **Memory:** Entire file loaded into memory; not suitable for very large files
 - **Read-only:** Cannot create or modify Excel files
 - **Formulas:** Extracted as strings, not evaluated
+- **Streaming:** Shared strings still loaded in memory (use standard `ReadFile` for small files)
 
 ## Roadmap
 
@@ -459,11 +511,11 @@ See [ROADMAP.md](ROADMAP.md) for detailed feature plans.
 - Export (JSON, CSV, SQL)
 - Schema generation
 - Concurrent processing
+- Streaming reader for large files (100k+ rows)
 - Docker support
 - CLI
 
 **Planned:**
-- Streaming reader for large files
 - Write support (create Excel files)
 - Formula evaluation
 
